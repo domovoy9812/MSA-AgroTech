@@ -1,0 +1,108 @@
+@startuml
+skinparam packageStyle rectangle
+
+package "data" {
+    interface Animal {
+        + String getId()
+        + AnimalStatus getStatus()
+    }
+    class Pig extends Animal {
+        - id: String
+        - status: AnimalStatus
+        + String getId()
+        + AnimalStatus getStatus()
+        + setStatus(AnimalStatus status)
+    }
+    class AnimalStatus {
+        - id: String
+        - name: String
+    }
+    class AnimalRepository {
+        + create(Animal animal)
+        + update(Animal animal)
+        + delete(Aminal animal)
+    }
+    AnimalRepository <-- Animal
+    Animal o-- AnimalStatus
+}
+package "service" {
+    package "dto" {
+        class NewAnimalRequest {
+        }
+        interface MonitoringEvent {
+            + String getId()
+        }
+        class ChangeAnimalStatusEvent extends MonitoringEvent {
+        }
+        class AnimalCountChangedEvent extends MonitoringEvent {
+        }
+        class BehavioralDeviationEvent extends MonitoringEvent {
+        }
+    }
+    interface AnimalManagementService {
+        + changeAnimalStatus(String id, AnimalStatus newStatus)
+        + addAnimal(NewAnimalRequest request)
+        + deleteAnimal(String id)
+    }
+    class AnimalManagementServiceImpl extends AnimalManagementService {
+    }
+    AnimalManagementService --> NewAnimalRequest
+    interface HandleMonitoringEventService {
+        + handleChangeAnimalStatusEvent(ChangeAnimalStatusEvent event)
+        + handleAnimalCountChangedEvent(AnimalCountChangedEvent event)
+        + handleBehavioralDeviationEvent(BehavioralDeviationEvent event)
+    }
+    class HandleMonitoringEventServiceImpl extends HandleMonitoringEventService {
+    }
+    HandleMonitoringEventServiceImpl --> ChangeAnimalStatusEvent
+    HandleMonitoringEventServiceImpl --> AnimalCountChangedEvent
+    HandleMonitoringEventServiceImpl --> BehavioralDeviationEvent
+    HandleMonitoringEventServiceImpl --> AnimalManagementService
+}
+package "controller" {
+    class MonitoringEventController {
+        + handleChangeAnimalStatusEvent(ChangeAnimalStatusEvent event)
+        + handleAnimalCountChangedEvent(AnimalCountChangedEvent event)
+        + handleBehavioralDeviationEvent(BehavioralDeviationEvent event)
+    }
+    class RestApiController {
+        + changeAnimalStatus(String id, AnimalStatus newStatus)
+        + addAnimal(NewAnimalRequest request)
+        + deleteAnimal(String id)
+    }
+}
+package "integration" {
+    class Notification {
+        + receiver: String
+        + subject: String
+        + message: String
+    }
+    class NotificationSender {
+        + sendNotification(notification: Notification)
+    }
+
+    class EventHistoryRecord {
+        + id: String
+        + date: Date
+        + type: String
+        + parameters: Map<String, String>
+    }
+
+    interface EventSender {
+        sendEvent(EventHistoryRecord record)
+    }
+
+    class RabbitMqEventSender extends EventSender {
+    }
+    EventSender --> EventHistoryRecord
+    NotificationSender --> Notification
+}
+AnimalManagementServiceImpl --> AnimalRepository
+RestApiController --> AnimalManagementService
+RestApiController --> NewAnimalRequest
+MonitoringEventController --> ChangeAnimalStatusEvent
+MonitoringEventController --> AnimalCountChangedEvent
+MonitoringEventController --> BehavioralDeviationEvent
+HandleMonitoringEventServiceImpl --> EventSender
+HandleMonitoringEventServiceImpl --> NotificationSender
+@enduml
